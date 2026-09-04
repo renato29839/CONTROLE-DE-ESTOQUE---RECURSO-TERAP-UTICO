@@ -1,176 +1,52 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+<!doctype html>
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NPC | Controle de Imobilizado</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Controle de Recurso Terapêutico</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .tab-menu { display: flex; gap: 6px; border-bottom: 1px solid #d8e4df; margin: 0 0 10px; overflow-x: auto; }
+    .tab-button { border: 0; border-bottom: 3px solid transparent; background: transparent; color: #607476; padding: 13px 18px; font: 700 13px 'DM Sans'; cursor: pointer; white-space: nowrap; }
+    .tab-button.active { color: #26745d; border-bottom-color: #26745d; background: #edf5ee; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .product-picker select { min-width: 0; height: 48px; font-weight: 500; }
+    .product-picker { min-width: 0; }
+    .product-picker optgroup { color: #26745d; font-weight: 700; }
+    .product-picker option { color: #183235; padding: 6px; }
+    .quantity-picker input { height: 48px; }
+  </style>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="logo-container">
-            <img src="LOGONPC.png" alt="Logo NPC" class="logo-img">
-            <div style="margin-top: 10px; font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Sistema de Gestão</div>
-        </div>
-        <nav>
-            <ul>
-                <li class="active" data-page="dashboard"><i class="fas fa-chart-line"></i> Dashboard</li>
-                <li data-page="nova-saida"><i class="fas fa-sign-out-alt"></i> Registrar Saída</li>
-                <li data-page="cadastro-itens"><i class="fas fa-boxes"></i> Cadastro de Itens</li>
-                <li data-page="historico"><i class="fas fa-history"></i> Histórico de Saídas</li>
-            </ul>
-        </nav>
-    </div>
-
-    <main class="content">
-        <!-- Dashboard -->
-        <section id="dashboard" class="page active">
-            <header>
-                <h1>Dashboard de Estoque</h1>
-            </header>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>Total em Estoque</h3>
-                    <p id="totalEstoque">Carregando...</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Total de Saídas</h3>
-                    <p id="totalSaidas">Carregando...</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Itens Cadastrados</h3>
-                    <p id="totalItens">Carregando...</p>
-                </div>
-            </div>
-            <div class="chart-container">
-                <h2>Resumo de Itens</h2>
-                <div class="table-container">
-                    <table id="summaryTable">
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Descrição</th>
-                                <th>Entrada</th>
-                                <th>Saída</th>
-                                <th>Saldo Atual</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- Registrar Saída -->
-        <section id="nova-saida" class="page" style="display: none;">
-            <header>
-                <h1>Registrar Nova Saída</h1>
-            </header>
-            <div class="card">
-                <form id="saidaForm">
-                    <div class="form-group">
-                        <label>Selecione o Item:</label>
-                        <select id="itemSelect" required></select>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Quantidade:</label>
-                            <input type="number" id="quantidade" min="1" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Responsável:</label>
-                            <input type="text" id="responsavel" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Destino/Motivo:</label>
-                        <input type="text" id="destino" required>
-                    </div>
-                    <button type="submit" class="btn-primary">Confirmar Saída e Gerar PDF</button>
-                </form>
-            </div>
-        </section>
-
-        <!-- Cadastro de Itens -->
-        <section id="cadastro-itens" class="page" style="display: none;">
-            <header>
-                <h1>Gerenciamento de Itens</h1>
-                <button class="btn-primary" id="btnToggleForm" onclick="window.toggleItemForm()">+ Inserir Novo Item</button>
-            </header>
-
-            <!-- Formulário de Item Integrado (Inicialmente oculto) -->
-            <div id="itemFormContainer" class="card" style="display: none; margin-bottom: 30px; border-top: 4px solid var(--primary-color);">
-                <h2 id="formItemTitle" style="margin-bottom: 20px;">Cadastrar Novo Item</h2>
-                <form id="itemForm">
-                    <input type="hidden" id="editIndex">
-                    <div class="form-group">
-                        <label>Código do Item:</label>
-                        <input type="text" id="itemCodigo" placeholder="Ex: DMT001" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Descrição Completa:</label>
-                        <input type="text" id="itemDescricao" placeholder="Ex: Kit de Brinquedos ABA" required>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Quantidade Inicial:</label>
-                            <input type="number" id="itemQtd" min="0" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Unidade de Medida:</label>
-                            <input type="text" id="itemUnidade" value="UN" required>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                        <button type="button" class="btn-secondary" onclick="window.toggleItemForm()">Cancelar</button>
-                        <button type="submit" class="btn-primary" id="btnSaveItem">Salvar Item</button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="table-container">
-                <table id="itensTable">
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Descrição</th>
-                            <th>Qtd Inicial</th>
-                            <th>Unidade</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- Histórico -->
-        <section id="historico" class="page" style="display: none;">
-            <header>
-                <h1>Histórico de Movimentações</h1>
-            </header>
-            <div class="table-container">
-                <table id="historyTable">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Item</th>
-                            <th>Qtd</th>
-                            <th>Responsável</th>
-                            <th>Destino</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </section>
-    </main>
-
-    <!-- Firebase SDK (Modular) -->
-    <script type="module" src="script.js"></script>
+  <header class="topbar">
+    <div class="brand"><img src="LOGONPC.png" alt="Instituto Neuropsicocentro"><div><strong>Controle de Recurso</strong><span>Inventário terapêutico</span></div></div>
+    <div id="connection" class="connection pending"><i></i><span>Conectando...</span></div>
+  </header>
+  <main>
+    <section class="hero"><div><p class="eyebrow">INSTITUTO NEUROPSICOCENTRO</p><h1>Inventário de recursos</h1><p class="subtitle">Produtos cadastrados a partir das notas fiscais de junho e julho de 2026.</p></div><button id="reset-button" class="danger" type="button">Zerar e importar NF-e</button></section>
+    <section id="notice" class="notice" role="status" hidden></section>
+    <nav class="tab-menu" aria-label="Módulos do sistema"><button class="tab-button active" type="button" data-tab="inventory-tab">Inventário</button><button class="tab-button" type="button" data-tab="new-output-tab">Cadastrar saídas</button><button class="tab-button" type="button" data-tab="history-tab">Registros de saídas</button></nav>
+    <section id="inventory-tab" class="tab-panel active">
+      <section class="stats" aria-label="Resumo"><div><span>Itens cadastrados</span><strong id="item-count">0</strong></div><div><span>Unidades em estoque</span><strong id="unit-count">0</strong></div><div><span>Valor dos produtos</span><strong id="total-value">R$ 0,00</strong></div><div><span>Notas fiscais</span><strong id="invoice-count">0</strong></div></section>
+      <section class="toolbar"><label class="search"><span>Buscar</span><input id="search" type="search" placeholder="Código ou descrição"></label><label><span>Nota fiscal</span><select id="invoice-filter"><option value="">Todas as notas</option></select></label></section>
+      <section class="table-wrap"><table><thead><tr><th>Código</th><th>Descrição</th><th>NF-e</th><th>Fornecedor</th><th>Qtd.</th><th>Unitário</th><th>Total</th></tr></thead><tbody id="product-list"><tr><td colspan="7" class="empty">Carregando inventário...</td></tr></tbody></table></section>
+    </section>
+    <section id="new-output-tab" class="tab-panel">
+    <section class="workspace-panel output-panel">
+      <div class="panel-heading"><div><p class="eyebrow">MOVIMENTAÇÃO</p><h2>Nova saída de produtos</h2><p class="subtitle">Monte uma única saída com vários itens e gere o termo para assinatura.</p></div><span id="cart-count" class="panel-count">0 itens</span></div>
+      <form id="output-form" class="output-form">
+        <div class="form-grid"><label>Responsável pela retirada<input id="output-person" required placeholder="Nome completo"></label><label>Setor ou destino<input id="output-destination" required placeholder="Ex.: Sala de atendimento"></label><label>Data<input id="output-date" type="date" required></label></div>
+        <div class="add-row"><label class="product-picker">Produto<select id="output-product" required><option value="">Selecione um produto disponível</option></select></label><label class="quantity-picker">Quantidade<input id="output-quantity" type="number" min="1" step="1" value="1" required></label><button id="add-output-item" type="submit">Adicionar item</button></div>
+      </form>
+      <div class="cart-wrap"><table><thead><tr><th>Produto</th><th>Código</th><th>Disponível</th><th>Qtd. saída</th><th></th></tr></thead><tbody id="output-cart"><tr><td colspan="5" class="empty">Nenhum produto adicionado à saída.</td></tr></tbody></table></div>
+      <div class="output-actions"><span id="output-total">0 unidades</span><button id="save-output" class="primary" type="button" disabled>Registrar saída</button></div>
+    </section>
+    </section>
+    <section id="history-tab" class="tab-panel"><section class="workspace-panel history-panel"><div class="panel-heading"><div><p class="eyebrow">RASTREABILIDADE</p><h2>Últimas saídas</h2></div></div><div class="cart-wrap"><table><thead><tr><th>Data</th><th>Responsável</th><th>Destino</th><th>Itens</th><th>Status</th><th>Ações</th></tr></thead><tbody id="output-history"><tr><td colspan="6" class="empty">Nenhuma saída registrada.</td></tr></tbody></table></div></section></section>
+  </main>
+  <dialog id="confirm-dialog"><form method="dialog"><h2>Substituir banco?</h2><p>Esta ação apaga os dados atuais do Realtime Database e importa os 89 itens das três notas fiscais. Não é possível desfazer.</p><div class="dialog-actions"><button value="cancel">Cancelar</button><button id="confirm-reset" class="danger" value="confirm">Zerar e importar</button></div></form></dialog>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
