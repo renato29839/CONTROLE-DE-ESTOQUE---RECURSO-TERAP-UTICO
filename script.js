@@ -1,8 +1,7 @@
-// Importando Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, set, onValue, push, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, onValue, set, push, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-// Configuração Firebase do Usuário
 const firebaseConfig = {
   apiKey: "AIzaSyCsdqJP0z0cBnL_BmGJ6fUYRSAQaDyLahg",
   authDomain: "recursoterapeutico-66d8f.firebaseapp.com",
@@ -14,358 +13,79 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const auth = getAuth(app);
+const database = getDatabase(app);
+const productsRef = ref(database, "products");
+const outputsRef = ref(database, "outputs");
+const state = { products: [], outputs: [], cart: [], editingOutputId: null };
 
-// Dados Iniciais Consolidados
-const initialData = [
-    { codigo: 'DMT0037', descricao: 'KIT COZINHA INFANTIL 11PCS INO', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: 'DMT6174', descricao: 'MALETA DOUTOR DM COM ACESSORIO', qtdOriginal: 12, unidade: 'UN' },
-    { codigo: 'DMT7100', descricao: 'KIT BARBEIRO VIP', qtdOriginal: 8, unidade: 'UN' },
-    { codigo: 'DMT7101', descricao: 'KIT SALAO DE BELEZA VIP', qtdOriginal: 10, unidade: 'UN' },
-    { codigo: 'DMT5100', descricao: 'ESTRELA LALA BATE E VOLTA MUSI', qtdOriginal: 12, unidade: 'UN' },
-    { codigo: 'DMT5101', descricao: 'TRENZINHO BATE E VOLTA', qtdOriginal: 12, unidade: 'UN' },
-    { codigo: 'DMT0218', descricao: 'COLECAO PLANETA ANIMAL KIT FIG', qtdOriginal: 24, unidade: 'UN' },
-    { codigo: 'DMT0211', descricao: 'COLECAO PLANETA ANIMAL KIT FIG', qtdOriginal: 36, unidade: 'UN' },
-    { codigo: 'DMT6903', descricao: 'BRINQUEDO DANCING MUSICAL TE', qtdOriginal: 24, unidade: 'UN' },
-    { codigo: 'DMT6259', descricao: 'CARRO FRICCAO CORRIDA MALUCO', qtdOriginal: 36, unidade: 'UN' },
-    { codigo: 'DMT6298', descricao: 'CARRO FRICCAO PULL BACK IMPACT', qtdOriginal: 48, unidade: 'UN' },
-    { codigo: 'DMT5736', descricao: 'DIDATICOS APRENDA BRINCANDO RE', qtdOriginal: 36, unidade: 'UN' },
-    { codigo: 'DMT6730', descricao: 'DIDATICOS APRENDA BRINCANDO FR', qtdOriginal: 36, unidade: 'UN' },
-    { codigo: 'DMT6776', descricao: 'DIDATICOS APRENDA BRINCANDO TR', qtdOriginal: 24, unidade: 'UN' },
-    { codigo: 'DMT5735', descricao: 'DIDATICOS APRENDA BRINCANDO AN', qtdOriginal: 24, unidade: 'UN' },
-    { codigo: 'DMT5725', descricao: 'DIDATICOS APRENDA BRINCANDO RE', qtdOriginal: 24, unidade: 'UN' },
-    { codigo: 'DMT5730', descricao: 'DIDATICOS APRENDA BRINCANDO CO', qtdOriginal: 24, unidade: 'UN' },
-    { codigo: 'DMT5731', descricao: 'DIDATICOS APRENDA BRINCANDO CO', qtdOriginal: 24, unidade: 'UN' },
-    { codigo: 'DMT0200', descricao: 'APRENDA BRINCANDO MATEMATICA', qtdOriginal: 12, unidade: 'UN' },
-    { codigo: 'DMT0286', descricao: 'APRENDA BRINCANDO MALETA DE AT', qtdOriginal: 12, unidade: 'UN' },
-    { codigo: 'DMT0048', descricao: 'APRENDA BRINCANDO LABIRINTO MA', qtdOriginal: 12, unidade: 'UN' },
-    { codigo: 'DMT0015', descricao: 'DIDATICOS APRENDA BRINCANDO QU', qtdOriginal: 48, unidade: 'UN' },
-    { codigo: 'DMT7122', descricao: 'QUADRO DESENHO MAGNETICO COM 1', qtdOriginal: 24, unidade: 'UN' },
-    { codigo: 'DMT6640', descricao: 'AREIA DIVERTIDA CASTELO 300G', qtdOriginal: 48, unidade: 'UN' },
-    { codigo: 'DMT6637', descricao: 'AREIA DIVERTIDA POCKET BICHOS', qtdOriginal: 48, unidade: 'UN' },
-    { codigo: 'DMT6765', descricao: 'DM BLOCKS MAGNETICOS 47 PECAS', qtdOriginal: 8, unidade: 'UN' },
-    { codigo: 'DMT6311', descricao: 'PIAO MALUCO FLASH BOLA CORES', qtdOriginal: 48, unidade: 'UN' },
-    { codigo: 'DMT7068', descricao: 'CAPIVARA DIVERTIDA', qtdOriginal: 18, unidade: 'UN' },
-    { codigo: 'DMT6932', descricao: 'COLECAO PET DOG STRETCH SORTID', qtdOriginal: 48, unidade: 'UN' },
-    { codigo: 'DMT6933', descricao: 'COLECAO PET CAT SORTIDOS', qtdOriginal: 48, unidade: 'UN' },
-    { codigo: 'DMT7161', descricao: 'JOGO RL GAMES DESAFIO DO PUZZL', qtdOriginal: 36, unidade: 'UN' },
-    { codigo: 'DMT7162', descricao: 'JOGO RL GAMES DESAFIO DA SETA', qtdOriginal: 36, unidade: 'UN' },
-    { codigo: 'DMT6733', descricao: 'JOGO TORRE DIVERTIDA 54 PECAS', qtdOriginal: 24, unidade: 'UN' },
-    { codigo: 'DMT0058', descricao: 'JOGO DOGAO PEGA PEGA', qtdOriginal: 12, unidade: 'UN' },
-    { codigo: '9017', descricao: 'LETRAS & IMAGENS', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '9018', descricao: 'OBJETOS & FUNCOES', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '9020', descricao: 'RECONHECER E CLASSIFICAR', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '6003', descricao: 'LABIRINTO NO CAMPO', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '6013', descricao: 'EMPILHE OS TUCANOS - JOGUINHOS DE BOLSA', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '7073', descricao: 'MINI LOTO - ANIMAIS PELO MUNDO', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '7034', descricao: 'JOGUINHO DE BOLSA: MOVA-SE COELHINHO', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '6012', descricao: 'JOGUINHOS DE BOLSA: JOGO DA MEMORIA ANIMAIS', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '7010', descricao: 'JOGUINHOS DE BOLSA: JOGO DE ACAO', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '7059', descricao: 'TABUADA DO 1 A 10 COLECAO JOGUINHOS DE BOLSA', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '7060', descricao: 'MINI TANGRAM COLECAO JOGUINHOS DE BOLSA', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '7050', descricao: 'PEGA PEGA PUM PUM JOGUINHOS DE BOLSA', qtdOriginal: 9, unidade: 'UN' },
-    { codigo: '7051', descricao: 'ALINHAVOS JOGUINHOS DE BOLSA', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '7006', descricao: 'JOGUINHOS DE BOLSA: MINI BINGO', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '6030', descricao: 'QUEBRA-CABECA GIGANTE CONTANDO ATE 5', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '6021', descricao: 'QUEBRA-CABECA BABY ANIMAIS E FILHOTES', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '7047', descricao: 'TOQUE EMBOQUE', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '7065', descricao: 'SEQUENCIA DIA A DIA DO URSINHO', qtdOriginal: 9, unidade: 'UN' },
-    { codigo: '7033', descricao: 'ALIMENTE BEM O MACAQUINHO', qtdOriginal: 9, unidade: 'UN' },
-    { codigo: '6025', descricao: 'QUEBRA CABECA GIGANTE UNICORNIO', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '6027', descricao: 'QUEBRA CABECA GIGANTE FUNDO DO MAR', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '7066', descricao: 'PACK COM 8 QUEBRA-CABECAS 09 PECAS ANIMAIS', qtdOriginal: 1, unidade: 'UN' },
-    { codigo: '7004', descricao: 'SEQUENCIA LOGICA MINHA ROTINA', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '7064', descricao: 'EU ME SINTO ASSIM URSINHO', qtdOriginal: 9, unidade: 'UN' },
-    { codigo: '7063', descricao: 'REQUINHAS PRIMEIROS TRACOS', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '6074', descricao: 'FAMILIA GATINHOS EXPRESSOES', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '6067', descricao: 'A DONA ARANHA', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '7048', descricao: 'ARGOLA DOS URSINHOS', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '6044', descricao: 'EQUILIBRE O URSINHO', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '7026', descricao: 'QUEBRA-CABECA CRIATIVO', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '7061', descricao: 'QUEM ESTA AI ?', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '6066', descricao: 'FORMAS MAGICAS', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '7015', descricao: 'VAMOS DESENHAR ? FIGURAS VAZADAS', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '7018', descricao: 'MEMORIA TROCA TEMA', qtdOriginal: 9, unidade: 'UN' },
-    { codigo: '7001', descricao: 'LOTO DAS LETRAS', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '6063', descricao: 'QUADRO MINHA ROTINA ESTRELINHAS', qtdOriginal: 9, unidade: 'UN' },
-    { codigo: '6046', descricao: 'QUEBRA CABECA SOLETRANDO ANIMAIS', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '7074', descricao: 'MOSAICO CRIATIVO', qtdOriginal: 9, unidade: 'UN' },
-    { codigo: '6019', descricao: 'ALFABETO DIVERTIDO', qtdOriginal: 12, unidade: 'UN' },
-    { codigo: '7075', descricao: 'PRIMEIROS ENCAIXES - CORES E FORMAS', qtdOriginal: 9, unidade: 'UN' },
-    { codigo: '7023', descricao: 'TETRIS DO TUCANO', qtdOriginal: 3, unidade: 'UN' },
-    { codigo: '6070', descricao: 'QUEM SOU EU ?', qtdOriginal: 9, unidade: 'UN' },
-    { codigo: '7025', descricao: 'COLMEIA DOS BICHINHOS', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '7043', descricao: 'CONTE AS CENOURINHAS', qtdOriginal: 6, unidade: 'UN' },
-    { codigo: '7005', descricao: 'ALFABETO CURSIVO ESCREVA E APAGUE', qtdOriginal: 9, unidade: 'UN' }
+const invoices = [
+  { id: "33260606159083000142550010001207041830981054", number: "120704", date: "2026-06-18", supplier: "COMERCIAL DM BRASIL LTDA", total: 17120.58 },
+  { id: "35260724592134000107550010000164061545516625", number: "016406", date: "2026-07-06", supplier: "BRINQUEDOS BABEBI LTDA", total: 9039.48 },
+  { id: "35260754575482000137550010000034641616607438", number: "003464", date: "2026-07-20", supplier: "NO MUNDO DOS BRINQUEDOS IND. E COM. LTDA", total: 3580.08 }
 ];
 
-let estoque = [];
-let historico = [];
+const rawProducts = [
+  ["120704","DMT0037","KIT COZINHA INFANTIL 11PCS INO",6,75.2],["120704","DMT6174","MALETA DOUTOR DM COM ACESSORIO",12,46.81],["120704","DMT7100","KIT BARBEIRO VIP",8,29.88],["120704","DMT7101","KIT SALAO DE BELEZA VIP",8,42.11],["120704","DMT3900","ESTRELA LALA BATE E VOLTA MUSI",12,33.65],["120704","DMT5101","TRENZINHO BATE E VOLTA",12,33.65],["120704","DMT0218","COLECAO PLANETA ANIMAL KIT FIG",24,11.28],["120704","DMT0220","COLECAO PLANETA ANIMAL KIT FIG",36,7.03],["120704","DMT6903","BRINQUEDO EDUCATIVO MUSICAL TE",24,24.25],["120704","DMT6259","CARRO FRICCAO CORRIDA MALUCO",36,16.92],
+  ["120704","DMT6298","CARRO FRICCAO PULL BACK IMPACT",48,6],["120704","DMT5736","DIDATICOS APRENDA BRINCANDO RE",36,18.61],["120704","DMT6730","DIDATICOS APRENDA BRINCANDO FR",36,12.03],["120704","DMT6776","DIDATICOS APRENDA BRINCANDO TR",24,24.25],["120704","DMT5735","DIDATICOS APRENDA BRINCANDO AN",24,19.55],["120704","DMT5729","DIDATICOS APRENDA BRINCANDO CO",24,19.55],["120704","DMT5730","DIDATICOS APRENDA BRINCANDO CO",24,19.55],["120704","DMT5731","DIDATICOS APRENDA BRINCANDO CO",24,19.55],["120704","DMT0200","APRENDA BRINCANDO MATEMATICA",12,37.41],["120704","DMT0286","APRENDA BRINCANDO MALETA DE AT",12,42.11],["120704","DMT0048","APRENDA BRINCANDO LABIRINTO MA",12,33.65],["120704","DMT0015","DIDATICOS APRENDA BRINCANDO QU",48,11.09],["120704","DMT7122","QUADRO DESENHO MAGNETICO COM 1",24,26.13],["120704","DMT6640","AREIA DIVERTIDA CASTELO 300G",48,17.86],["120704","DMT6637","AREIA DIVERTIDA POCKET BICHOS",48,8.46],["120704","DMT6765","DM BLOCKS MAGNETICOS 47 PECAS",8,84.6],["120704","DMT6311","PIAO MALUCO FLASH BOLA CORES",48,10.15],["120704","DMT7068","CAPIVARA DIVERTIDA",18,13.91],["120704","DMT6932","COLECAO PET DOG STRETCH SORTID",48,7.52],["120704","DMT6933","COLECAO PET CAT SORTIDOS",48,7.52],["120704","DMT7161","JOGO RL GAMES DESAFIO DO PUZZL",36,17.86],["120704","DMT7162","JOGO RL GAMES DESAFIO DA SETA",36,17.86],["120704","DMT6733","JOGO TORRE DIVERTIDA 54 PECAS",24,16.92],["120704","DMT0058","JOGO DOGAO PEGA PEGA",12,42.11],
+  ["016406","9017","LETRAS & IMAGENS",3,35.5712],["016406","9018","OBJETOS & FUNCOES",3,29.824],["016406","9020","RECONHECER E CLASSIFICAR",3,25.1264],["016406","6003","LABIRINTO NO CAMPO",3,34.2208],["016406","6013","EMPILHE OS TUCANOS - JOGUINHOS DE BOLSA",3,20.704],["016406","7073","MINI LOTO - ANIMAIS PELO MUNDO",3,20.4992],["016406","7034","JOGUINHO DE BOLSA: MOVA-SE COELHINHO",3,20.2112],["016406","6012","JOGUINHOS DE BOLSA: JOGO DA MEMORIA ANIMAIS",3,15.2448],["016406","7010","JOGUINHOS DE BOLSA: JOGO DE ACAO",6,26.7072],["016406","7059","TABUADA DO 1 A 10 COLECAO JOGUINHOS DE BOLSA",3,18.6176],["016406","7060","MINI TANGRAM COLECAO JOGUINHOS DE BOLSA",3,18.6176],["016406","7050","PEGA PEGA POM POM JOGUINHOS DE BOLSA",9,20.9664],["016406","7051","ALINHAVOS JOGUINHOS DE BOLSA",6,19.5136],["016406","7006","JOGUINHOS DE BOLSA: MINI BINGO",6,17.44],["016406","6030","QUEBRA-CABECA GIGANTE CONTANDO ATE 5",6,25.0048],["016406","6021","QUEBRA-CABECA BABY ANIMAIS E FILHOTES",6,17.5424],["016406","7047","TOQUE EMBOQUE",3,75.9424],["016406","7085","SEQUENCIA DIA A DIA DO URSINHO",9,20.1472],["016406","7035","ALIMENTE BEM O MACAQUINHO",9,50.3424],["016406","6025","QUEBRA CABECA GIGANTE UNICORNIO",3,23.5264],["016406","6027","QUEBRA CABECA GIGANTE FUNDO DO MAR",3,23.5264],["016406","7086","PACK COM 8 QUEBRA-CABECAS 09 PECAS ANIMAIS",1,60.7424],["016406","7004","SEQUENCIA LOGICA MINHA ROTINA",6,23.2192],["016406","7084","EU ME SINTO ASSIM URSINHO",9,23.52],["016406","7083","REGUINHAS PRIMEIROS TRACOS",3,21.3632],["016406","6074","FAMILIA GATINHOS EXPRESSOES",3,28.8704],["016406","6067","A DONA ARANHA",6,36.1152],["016406","7048","ARGOLA DOS URSINHOS",3,60.2624],["016406","6044","EQUILIBRE O URSINHO",6,39.8976],["016406","7026","QUEBRA-CABECA CRIATIVO",3,35.2128],["016406","7061","QUEM ESTA AI ?",6,59.1168],["016406","6066","FORMAS MAGICAS",6,48.9472],["016406","7015","VAMOS DESENHAR ? FIGURAS VAZADAS",6,41.4592],["016406","7018","MEMORIA TROCA TEMA",9,44.1408],["016406","7001","LOTO DAS LETRAS",6,30.592],["016406","6063","QUADRO MINHA ROTINA ESTRELINHAS",9,49.0112],["016406","6046","QUEBRA CABECA SOLETRANDO ANIMAIS",6,49.0496],["016406","7074","MOSAICO CRIATIVO",9,59.5968],["016406","6019","ALFABETO DIVERTIDO",12,18.8736],["016406","7075","PRIMEIROS ENCAIXES - CORES E FORMAS",9,27.5968],["016406","7023","TETRIS DO TUCANO",3,60.5952],["016406","6070","QUEM SOU EU ?",9,41.5424],["016406","7025","COLMEIA DOS BICHINHOS",6,50.6112],["016406","7043","CONTE AS CENOURINHAS",6,47.5392],["016406","7005","ALFABETO CURSIVO ESCREVA E APAGUE",9,29.824],
+  ["003464","3.03.370","JOGO DO MICO - NOVA EMBALAGEM",16,6.885],["003464","3.03.390","JOGO DA FORCA",6,21.675],["003464","3.03.550","DESAFIO JUNIOR",12,28.7895],["003464","3.03.552","QUE BICHO E ESSE?",12,28.7895],["003464","3.03.1012","JOGO PASSE A BOMBA",18,67.915],["003464","3.03.1038","MUDANCA MALUCA",18,21.675],["003464","3.03.1133","QUEBRA CABECA GIGANTE - LEAOZINHO",6,22.9075],["003464","3.03.1303","JOGO FROSTY",6,28.475],["003464","3.03.1210","JOGO MULTI FACES",6,42.4575],["003464","3.03.1152","HISTORIA EM CUBINHOS",6,42.4575]
+];
 
-// Firebase Sync
-onValue(ref(db, 'estoque'), (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        estoque = Object.values(data);
-    } else {
-        estoque = initialData.map(i => ({...i, qtdAtual: i.qtdOriginal}));
-        set(ref(db, 'estoque'), estoque);
-    }
-    updateAllViews();
-});
+const seededProducts = Object.fromEntries(rawProducts.map(([invoice, code, description, quantity, unitPrice], index) => {
+  const invoiceData = invoices.find(item => item.number === invoice);
+  return [`${invoice}-${index + 1}`, { code, description, quantity, unitPrice, total: Number((quantity * unitPrice).toFixed(2)), invoiceNumber: invoice, invoiceId: invoiceData.id, supplier: invoiceData.supplier, date: invoiceData.date }];
+}));
+const seededDatabase = { products: seededProducts, invoices: Object.fromEntries(invoices.map(invoice => [invoice.id, invoice])), metadata: { importedAt: new Date().toISOString(), source: "NF-e fornecidas pelo usuario" } };
 
-onValue(ref(db, 'historico'), (snapshot) => {
-    const data = snapshot.val();
-    historico = data ? Object.values(data) : [];
-    updateAllViews();
-});
-
-// Navegação
-document.querySelectorAll('nav li').forEach(item => {
-    item.addEventListener('click', function() {
-        const pageId = this.getAttribute('data-page');
-        document.querySelectorAll('nav li').forEach(li => li.classList.remove('active'));
-        this.classList.add('active');
-        document.querySelectorAll('.page').forEach(page => {
-            page.classList.remove('active');
-            page.style.display = 'none';
-        });
-        const activePage = document.getElementById(pageId);
-        activePage.classList.add('active');
-        activePage.style.display = 'block';
-        updateAllViews();
-    });
-});
-
-function updateAllViews() {
-    renderDashboard();
-    renderItens();
-    popularSelect();
-    renderHistorico();
+const $ = selector => document.querySelector(selector);
+const money = value => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+function setConnection(text, kind) { const element = $("#connection"); element.className = `connection ${kind}`; element.querySelector("span").textContent = text; }
+function showNotice(message, kind = "info") { const element = $("#notice"); element.hidden = false; element.className = `notice ${kind}`; element.textContent = message; }
+function render() {
+  const query = $("#search").value.trim().toLowerCase();
+  const invoice = $("#invoice-filter").value;
+  const products = state.products.filter(item => (!invoice || item.invoiceNumber === invoice) && (!query || `${item.code} ${item.description} ${item.supplier}`.toLowerCase().includes(query)));
+  $("#item-count").textContent = state.products.length;
+  $("#unit-count").textContent = state.products.reduce((sum, item) => sum + availableQuantity(item), 0);
+  $("#total-value").textContent = money(state.products.reduce((sum, item) => sum + Number(item.total || 0), 0));
+  $("#invoice-count").textContent = new Set(state.products.map(item => item.invoiceNumber)).size;
+  $("#product-list").innerHTML = products.length ? products.map(item => `<tr><td><code>${item.code}</code></td><td>${item.description}</td><td>NF ${item.invoiceNumber}</td><td>${item.supplier}</td><td>${availableQuantity(item)}</td><td>${money(item.unitPrice)}</td><td>${money(item.total)}</td></tr>`).join("") : `<tr><td colspan="7" class="empty">Nenhum item encontrado.</td></tr>`;
+  renderOutputPicker();
+  renderCart();
+  renderHistory();
 }
+function populateInvoices() { $("#invoice-filter").innerHTML = `<option value="">Todas as notas</option>${invoices.map(item => `<option value="${item.number}">NF ${item.number} | ${item.supplier}</option>`).join("")}`; }
+function availableQuantity(product) { return Math.max(0, Number(product.quantity || 0) - state.outputs.reduce((sum, output) => sum + (output.items || []).filter(item => item.productId === product.id).reduce((subtotal, item) => subtotal + Number(item.quantity || 0), 0), 0)); }
+function renderOutputPicker() { const select = $("#output-product"); if (!select) return; const current = select.value; const grouped = invoices.map(invoice => { const products = state.products.filter(item => item.invoiceNumber === invoice.number && availableQuantity(item) > 0 && !state.cart.some(cartItem => cartItem.productId === item.id)); if (!products.length) return ""; return `<optgroup label="NF ${invoice.number} | ${invoice.supplier}">${products.map(item => `<option value="${item.id}">${item.code} | ${item.description} | ${availableQuantity(item)} disponíveis</option>`).join("")}</optgroup>`; }).join(""); select.innerHTML = `<option value="">Selecione um produto disponível</option>${grouped}`; if (state.products.some(item => item.id === current && availableQuantity(item) > 0)) select.value = current; }
+function renderCart() { const body = $("#output-cart"); if (!body) return; $("#cart-count").textContent = `${state.cart.length} ${state.cart.length === 1 ? "item" : "itens"}`; $("#output-total").textContent = `${state.cart.reduce((sum, item) => sum + item.quantity, 0)} unidades`; $("#save-output").disabled = !state.cart.length; body.innerHTML = state.cart.length ? state.cart.map(item => `<tr><td>${item.description}</td><td><code>${item.code}</code></td><td>${item.available}</td><td>${item.quantity}</td><td><button type="button" data-remove-item="${item.productId}">Remover</button></td></tr>`).join("") : `<tr><td colspan="5" class="empty">Nenhum produto adicionado à saída.</td></tr>`; body.querySelectorAll("[data-remove-item]").forEach(button => button.addEventListener("click", () => { state.cart = state.cart.filter(item => item.productId !== button.dataset.removeItem); renderCart(); renderOutputPicker(); })); }
+function renderHistory() { const body = $("#output-history"); if (!body) return; body.innerHTML = state.outputs.length ? state.outputs.slice().reverse().slice(0, 10).map(output => `<tr><td>${new Date(`${output.date}T12:00:00`).toLocaleDateString("pt-BR")}</td><td>${output.person}</td><td>${output.destination}</td><td>${output.items.length}</td><td><span class="status-pill">Registrada</span></td><td class="history-actions"><button type="button" data-edit-output="${output.id}">Editar</button><button type="button" data-download-output="${output.id}">Baixar PDF</button><button type="button" class="text-danger" data-delete-output="${output.id}">Excluir</button></td></tr>`).join("") : `<tr><td colspan="6" class="empty">Nenhuma saída registrada.</td></tr>`; body.querySelectorAll("[data-edit-output]").forEach(button => button.addEventListener("click", () => editOutput(button.dataset.editOutput))); body.querySelectorAll("[data-download-output]").forEach(button => button.addEventListener("click", () => { const output = state.outputs.find(item => item.id === button.dataset.downloadOutput); if (output) createPdf(output); })); body.querySelectorAll("[data-delete-output]").forEach(button => button.addEventListener("click", () => deleteOutput(button.dataset.deleteOutput))); }
+function addOutputItem(event) { event.preventDefault(); const product = state.products.find(item => item.id === $("#output-product").value); const quantity = Number($("#output-quantity").value); if (!product || !Number.isInteger(quantity) || quantity < 1 || quantity > availableQuantity(product)) return showNotice("Informe um produto e uma quantidade disponível.", "error"); state.cart.push({ productId: product.id, code: product.code, description: product.description, quantity, available: availableQuantity(product) }); $("#output-product").value = ""; $("#output-quantity").value = 1; renderCart(); renderOutputPicker(); }
+async function saveOutput() { const person = $("#output-person").value.trim(); const destination = $("#output-destination").value.trim(); const date = $("#output-date").value; if (!person || !destination || !date || !state.cart.length) return showNotice("Preencha responsável, destino, data e adicione pelo menos um item.", "error"); const output = { person, destination, date, items: state.cart.map(({ productId, code, description, quantity }) => ({ productId, code, description, quantity })), createdAt: new Date().toISOString() }; try { if (state.editingOutputId) await update(ref(database, `outputs/${state.editingOutputId}`), output); else await push(outputsRef, output); state.cart = []; state.editingOutputId = null; $("#output-form").reset(); $("#output-date").value = new Date().toISOString().slice(0, 10); $("#save-output").textContent = "Registrar saída"; renderCart(); renderOutputPicker(); showNotice("Saída registrada. Use 'Baixar PDF' ao lado dela quando precisar do documento.", "success"); } catch (error) { showNotice(`Não foi possível salvar a saída: ${error.message}`, "error"); } }
+function editOutput(id) { const output = state.outputs.find(item => item.id === id); if (!output) return; state.editingOutputId = id; $("#output-person").value = output.person; $("#output-destination").value = output.destination; $("#output-date").value = output.date; state.cart = output.items.map(item => ({ ...item, available: Number(item.quantity) + availableQuantity(state.products.find(product => product.id === item.productId)) })); $("#save-output").textContent = "Atualizar saída"; renderCart(); renderOutputPicker(); document.querySelector(".output-panel").scrollIntoView({ behavior: "smooth", block: "start" }); showNotice("Edite os dados e clique em 'Atualizar saída'.", "info"); }
+async function deleteOutput(id) { const output = state.outputs.find(item => item.id === id); if (!output || !window.confirm(`Excluir a saída de ${output.person}?`)) return; try { await remove(ref(database, `outputs/${id}`)); showNotice("Saída excluída e estoque recalculado.", "success"); } catch (error) { showNotice(`Não foi possível excluir a saída: ${error.message}`, "error"); } }
+async function createPdf(output) { const { jsPDF } = window.jspdf; const pdf = new jsPDF(); const teal = [77, 189, 178]; const dark = [24, 50, 53]; const gold = [225, 167, 70]; const pageWidth = pdf.internal.pageSize.getWidth(); const pageHeight = pdf.internal.pageSize.getHeight(); const logo = await loadLogo(); pdf.setFillColor(...teal); pdf.rect(0, 0, pageWidth, 38, "F"); if (logo) pdf.addImage(logo, "PNG", 16, 6, 26, 26); pdf.setTextColor(255, 255, 255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(16); pdf.text("TERMO DE SAIDA", 50, 17); pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.text("CONTROLE DE RECURSO TERAPEUTICO", 50, 25); pdf.setTextColor(...dark); pdf.setFont("helvetica", "bold"); pdf.setFontSize(19); pdf.text("Registro de saída de produtos", 16, 56); pdf.setDrawColor(...gold); pdf.setLineWidth(1.2); pdf.line(16, 62, pageWidth - 16, 62); pdf.setFontSize(9); pdf.setTextColor(105, 119, 120); pdf.text("DOCUMENTO PARA CONFERENCIA E ASSINATURA", 16, 70); pdf.setFillColor(247, 250, 245); pdf.roundedRect(16, 78, pageWidth - 32, 35, 3, 3, "F"); pdf.setTextColor(...dark); pdf.setFont("helvetica", "bold"); pdf.text("RESPONSAVEL PELA RETIRADA", 23, 88); pdf.text("DESTINO / SETOR", 23, 101); pdf.text("DATA", 145, 88); pdf.setFont("helvetica", "normal"); pdf.text(output.person, 23, 95); pdf.text(output.destination, 23, 108); pdf.text(new Date(`${output.date}T12:00:00`).toLocaleDateString("pt-BR"), 145, 95); let y = 128; pdf.setFillColor(...teal); pdf.roundedRect(16, y - 8, pageWidth - 32, 14, 2, 2, "F"); pdf.setTextColor(255, 255, 255); pdf.setFont("helvetica", "bold"); pdf.text("CODIGO", 23, y); pdf.text("PRODUTO", 58, y); pdf.text("QTD.", 178, y); pdf.setTextColor(...dark); pdf.setFont("helvetica", "normal"); let totalUnits = 0; output.items.forEach((item, index) => { const description = pdf.splitTextToSize(item.description, 112); const rowHeight = Math.max(10, description.length * 5 + 5); if (y + rowHeight > pageHeight - 60) { pdf.addPage(); y = 22; pdf.setFillColor(...teal); pdf.rect(0, 0, pageWidth, 14, "F"); pdf.setTextColor(255, 255, 255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(9); pdf.text("TERMO DE SAIDA | CONTROLE DE RECURSO TERAPEUTICO", 16, 9); pdf.setTextColor(...dark); } if (index % 2 === 0) { pdf.setFillColor(247, 250, 245); pdf.rect(16, y, pageWidth - 32, rowHeight, "F"); } y += 7; pdf.setFont("helvetica", "bold"); pdf.setFontSize(9); pdf.text(item.code, 23, y); pdf.setFont("helvetica", "normal"); pdf.text(description, 58, y); pdf.text(String(item.quantity), 180, y); totalUnits += Number(item.quantity); y += rowHeight - 3; }); y += 12; pdf.setDrawColor(210, 224, 219); pdf.line(16, y, pageWidth - 16, y); pdf.setTextColor(...dark); pdf.setFont("helvetica", "bold"); pdf.text(`TOTAL DE UNIDADES: ${totalUnits}`, 16, y + 10); pdf.setFont("helvetica", "normal"); pdf.setTextColor(105, 119, 120); pdf.text("Declaro que recebi os produtos relacionados neste documento.", 16, y + 20); const signatureY = Math.min(y + 55, pageHeight - 28); pdf.setDrawColor(...dark); pdf.line(25, signatureY, 90, signatureY); pdf.line(120, signatureY, 185, signatureY); pdf.setFontSize(8); pdf.text("Responsavel pela retirada", 32, signatureY + 6); pdf.text("Conferente", 143, signatureY + 6); pdf.setTextColor(140, 150, 150); pdf.text("Instituto Neuropsicocentro de Ensino", 16, pageHeight - 10); pdf.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, pageWidth - 76, pageHeight - 10); pdf.save(`termo-saida-${output.date}-${Date.now()}.pdf`); }
+function loadLogo() { return new Promise(resolve => { const image = new Image(); image.onload = () => { const source = document.createElement("canvas"); source.width = image.naturalWidth; source.height = image.naturalHeight; const context = source.getContext("2d"); context.drawImage(image, 0, 0); const pixels = context.getImageData(0, 0, source.width, source.height).data; let left = source.width; let top = source.height; let right = 0; let bottom = 0; for (let y = 0; y < source.height; y += 2) for (let x = 0; x < source.width; x += 2) { const offset = (y * source.width + x) * 4; if (pixels[offset] < 235 || pixels[offset + 1] < 235 || pixels[offset + 2] < 235) { left = Math.min(left, x); top = Math.min(top, y); right = Math.max(right, x); bottom = Math.max(bottom, y); } } if (right <= left || bottom <= top) return resolve(null); const padding = 8; left = Math.max(0, left - padding); top = Math.max(0, top - padding); right = Math.min(source.width, right + padding); bottom = Math.min(source.height, bottom + padding); const cropped = document.createElement("canvas"); cropped.width = right - left; cropped.height = bottom - top; cropped.getContext("2d").drawImage(source, left, top, cropped.width, cropped.height, 0, 0, cropped.width, cropped.height); resolve(cropped.toDataURL("image/png")); }; image.onerror = () => resolve(null); image.src = "LOGONPC.png"; }); }
+async function replaceDatabase() { setConnection("Importando...", "pending"); await set(ref(database), seededDatabase); showNotice("Banco zerado e 89 itens importados com sucesso.", "success"); setConnection("Sincronizado", "ok"); }
 
-function renderDashboard() {
-    const totalItensCadastrados = estoque.length;
-    const totalUnidadesEstoque = estoque.reduce((acc, curr) => acc + curr.qtdAtual, 0);
-    const totalUnidadesSaida = historico.reduce((acc, curr) => acc + curr.qtd, 0);
-    
-    document.getElementById('totalEstoque').textContent = totalUnidadesEstoque;
-    document.getElementById('totalSaidas').textContent = totalUnidadesSaida;
-    document.getElementById('totalItens').textContent = totalItensCadastrados;
+populateInvoices();
+document.querySelectorAll("[data-tab]").forEach(button => button.addEventListener("click", () => { document.querySelectorAll(".tab-button").forEach(item => item.classList.toggle("active", item === button)); document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.toggle("active", panel.id === button.dataset.tab)); }));
+$("#search").addEventListener("input", render);
+$("#invoice-filter").addEventListener("change", render);
+$("#output-form").addEventListener("submit", addOutputItem);
+$("#save-output").addEventListener("click", saveOutput);
+$("#output-date").value = new Date().toISOString().slice(0, 10);
+$("#reset-button").addEventListener("click", () => $("#confirm-dialog").showModal());
+$("#confirm-reset").addEventListener("click", async event => { event.preventDefault(); $("#confirm-dialog").close(); try { await replaceDatabase(); } catch (error) { setConnection("Erro de gravação", "error"); showNotice(`Não foi possível gravar no Firebase: ${error.message}`, "error"); } });
 
-    const tbody = document.querySelector('#summaryTable tbody');
-    if(!tbody) return;
-    tbody.innerHTML = '';
-    estoque.forEach(item => {
-        const saidasItem = historico.filter(h => h.itemCodigo === item.codigo).reduce((acc, curr) => acc + curr.qtd, 0);
-        tbody.innerHTML += `<tr>
-            <td>${item.codigo}</td>
-            <td>${item.descricao}</td>
-            <td>${item.qtdOriginal}</td>
-            <td>${saidasItem}</td>
-            <td style="font-weight:bold; color: ${item.qtdAtual === 0 ? 'red' : 'green'}">${item.qtdAtual}</td>
-        </tr>`;
-    });
+async function startSync() {
+  try {
+    await signInAnonymously(auth);
+    onValue(productsRef, snapshot => { state.products = Object.entries(snapshot.val() || {}).map(([id, product]) => ({ id, ...product })); setConnection("Sincronizado", "ok"); render(); if (!snapshot.exists()) showNotice("O banco está vazio. Use 'Zerar e importar NF-e' para carregar os 89 itens.", "info"); }, error => { setConnection("Sem acesso", "error"); showNotice(`Falha na leitura do Firebase: ${error.message}. Verifique as regras do Realtime Database.`, "error"); });
+    onValue(outputsRef, snapshot => { state.outputs = Object.entries(snapshot.val() || {}).map(([id, output]) => ({ id, ...output })); render(); }, error => showNotice(`Falha ao ler as saídas: ${error.message}`, "error"));
+  } catch (error) {
+    setConnection("Autenticação falhou", "error");
+    showNotice(`Não foi possível autenticar no Firebase: ${error.message}. Ative o provedor Anonymous em Authentication > Sign-in method.`, "error");
+  }
 }
-
-function renderItens() {
-    const tbody = document.querySelector('#itensTable tbody');
-    if(!tbody) return;
-    tbody.innerHTML = '';
-    estoque.forEach((item, index) => {
-        tbody.innerHTML += `<tr>
-            <td>${item.codigo}</td>
-            <td>${item.descricao}</td>
-            <td>${item.qtdOriginal}</td>
-            <td>${item.unidade}</td>
-            <td>
-                <button class="btn-icon" onclick="window.editarItem(${index})"><i class="fas fa-edit"></i></button>
-                <button class="btn-icon" style="color:red" onclick="window.excluirItem(${index})"><i class="fas fa-trash"></i></button>
-            </td>
-        </tr>`;
-    });
-}
-
-function renderHistorico() {
-    const tbody = document.querySelector('#historyTable tbody');
-    if(!tbody) return;
-    tbody.innerHTML = '';
-    historico.slice().reverse().forEach((reg, index) => {
-        const realIndex = historico.length - 1 - index;
-        tbody.innerHTML += `<tr>
-            <td>${reg.data}</td>
-            <td>${reg.itemDesc}</td>
-            <td>${reg.qtd}</td>
-            <td>${reg.responsavel}</td>
-            <td>${reg.destino}</td>
-            <td>
-                <button class="btn-primary" style="padding:5px 10px; font-size: 0.8rem" onclick="window.regerarPDF(${realIndex})">PDF</button>
-                <button class="btn-icon" onclick="window.editarSaida(${realIndex})"><i class="fas fa-edit"></i></button>
-                <button class="btn-icon" style="color:red" onclick="window.excluirSaida(${realIndex})"><i class="fas fa-trash"></i></button>
-            </td>
-        </tr>`;
-    });
-}
-
-function popularSelect() {
-    const select = document.getElementById('itemSelect');
-    if(!select) return;
-    select.innerHTML = '<option value="">Selecione...</option>';
-    const estoqueOrdenado = [...estoque].sort((a, b) => a.descricao.localeCompare(b.descricao));
-    estoqueOrdenado.forEach((item) => {
-        if(item.qtdAtual > 0) {
-            const originalIndex = estoque.findIndex(i => i.codigo === item.codigo);
-            select.innerHTML += `<option value="${originalIndex}">${item.codigo} - ${item.descricao} (Saldo: ${item.qtdAtual})</option>`;
-        }
-    });
-}
-
-// Lógica de Saída
-let editSaidaIndex = -1;
-document.getElementById('saidaForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const idx = document.getElementById('itemSelect').value;
-    const qtd = parseInt(document.getElementById('quantidade').value);
-    const responsavel = document.getElementById('responsavel').value;
-    const destino = document.getElementById('destino').value;
-
-    if(editSaidaIndex === -1) {
-        if(estoque[idx].qtdAtual < qtd) return alert('Estoque insuficiente!');
-        estoque[idx].qtdAtual -= qtd;
-        historico.push({
-            data: new Date().toLocaleString('pt-BR'),
-            itemCodigo: estoque[idx].codigo,
-            itemDesc: estoque[idx].descricao,
-            qtd, responsavel, destino,
-            unidade: estoque[idx].unidade
-        });
-    } else {
-        const oldReg = historico[editSaidaIndex];
-        const itemIdx = estoque.findIndex(i => i.codigo === oldReg.itemCodigo);
-        estoque[itemIdx].qtdAtual += oldReg.qtd;
-        if(estoque[itemIdx].qtdAtual < qtd) {
-            estoque[itemIdx].qtdAtual -= oldReg.qtd;
-            return alert('Estoque insuficiente!');
-        }
-        estoque[itemIdx].qtdAtual -= qtd;
-        historico[editSaidaIndex] = {...oldReg, qtd, responsavel, destino};
-        editSaidaIndex = -1;
-        document.querySelector('#nova-saida h1').textContent = 'Registrar Nova Saída';
-        document.getElementById('itemSelect').disabled = false;
-    }
-    saveToFirebase();
-    this.reset();
-    alert('Sucesso!');
-});
-
-// Funções Globais
-window.toggleItemForm = function() {
-    const container = document.getElementById('itemFormContainer');
-    const btn = document.getElementById('btnToggleForm');
-    if (container.style.display === 'none') {
-        container.style.display = 'block';
-        btn.textContent = 'Cancelar';
-        btn.classList.replace('btn-primary', 'btn-secondary');
-    } else {
-        container.style.display = 'none';
-        btn.textContent = '+ Inserir Novo Item';
-        btn.classList.replace('btn-secondary', 'btn-primary');
-        document.getElementById('itemForm').reset();
-        document.getElementById('editIndex').value = '';
-        document.getElementById('formItemTitle').textContent = 'Cadastrar Novo Item';
-    }
-};
-
-window.editarItem = function(index) {
-    const item = estoque[index];
-    const container = document.getElementById('itemFormContainer');
-    container.style.display = 'block';
-    document.getElementById('formItemTitle').textContent = 'Editar Item';
-    document.getElementById('itemCodigo').value = item.codigo;
-    document.getElementById('itemDescricao').value = item.descricao;
-    document.getElementById('itemQtd').value = item.qtdOriginal;
-    document.getElementById('itemUnidade').value = item.unidade;
-    document.getElementById('editIndex').value = index;
-    document.getElementById('btnToggleForm').textContent = 'Cancelar';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-};
-
-document.getElementById('itemForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const idx = document.getElementById('editIndex').value;
-    const itemData = {
-        codigo: document.getElementById('itemCodigo').value,
-        descricao: document.getElementById('itemDescricao').value,
-        qtdOriginal: parseInt(document.getElementById('itemQtd').value),
-        unidade: document.getElementById('itemUnidade').value
-    };
-
-    if(idx === '') {
-        estoque.push({...itemData, qtdAtual: itemData.qtdOriginal});
-    } else {
-        const diff = itemData.qtdOriginal - estoque[idx].qtdOriginal;
-        estoque[idx] = {...itemData, qtdAtual: Math.max(0, estoque[idx].qtdAtual + diff)};
-    }
-    saveToFirebase();
-    window.toggleItemForm();
-});
-
-window.excluirItem = function(index) {
-    if(confirm('Excluir item?')) {
-        estoque.splice(index, 1);
-        saveToFirebase();
-    }
-};
-
-window.editarSaida = function(index) {
-    const reg = historico[index];
-    const itemIdx = estoque.findIndex(i => i.codigo === reg.itemCodigo);
-    document.querySelector('nav li[data-page="nova-saida"]').click();
-    document.querySelector('#nova-saida h1').textContent = 'Editar Registro';
-    document.getElementById('itemSelect').value = itemIdx;
-    document.getElementById('itemSelect').disabled = true;
-    document.getElementById('quantidade').value = reg.qtd;
-    document.getElementById('responsavel').value = reg.responsavel;
-    document.getElementById('destino').value = reg.destino;
-    editSaidaIndex = index;
-};
-
-window.excluirSaida = function(index) {
-    if(confirm('Estornar estoque e excluir?')) {
-        const reg = historico[index];
-        const itemIdx = estoque.findIndex(i => i.codigo === reg.itemCodigo);
-        if(itemIdx !== -1) estoque[itemIdx].qtdAtual += reg.qtd;
-        historico.splice(index, 1);
-        saveToFirebase();
-    }
-};
-
-window.regerarPDF = function(index) {
-    const reg = historico[index];
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.setTextColor(77, 187, 177);
-    doc.text('NEUROPSICOCENTRO', 105, 20, { align: 'center' });
-    doc.setFontSize(12);
-    doc.setTextColor(44, 62, 80);
-    doc.text('REGISTRO DE SAÍDA DE BEM IMOBILIZADO', 105, 30, { align: 'center' });
-    doc.autoTable({
-        startY: 40,
-        head: [['Campo', 'Informação']],
-        body: [['Data', reg.data], ['Código', reg.itemCodigo], ['Descrição', reg.itemDesc], ['Quantidade', `${reg.qtd} ${reg.unidade}`], ['Responsável', reg.responsavel], ['Destino/Motivo', reg.destino]],
-        theme: 'striped',
-        headStyles: { fillColor: [77, 187, 177] }
-    });
-    const finalY = doc.lastAutoTable.finalY + 30;
-    doc.line(30, finalY, 90, finalY);
-    doc.text('Assinatura Responsável', 35, finalY + 5);
-    doc.line(120, finalY, 180, finalY);
-    doc.text('Visto Recebimento', 135, finalY + 5);
-    doc.save(`Saida_${reg.itemCodigo}_${Date.now()}.pdf`);
-};
-
-function saveToFirebase() {
-    set(ref(db, 'estoque'), estoque);
-    set(ref(db, 'historico'), historico);
-}
+startSync();
